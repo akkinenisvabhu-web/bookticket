@@ -11,7 +11,9 @@
   --color-neon-pink: #ff007f;
 }
 
+/* Global Font and Background Setup */
 body {
+  /* This font family must match the link in _document.tsx and the definition in tailwind.config.ts */
   font-family: 'Space Grotesk', sans-serif;
   background-color: var(--color-dark-blue);
   color: var(--color-off-white);
@@ -41,8 +43,19 @@ body::before {
   100% { opacity: 0.9; transform: scale(1.05); }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar matching the theme colors 
+  (This is good custom CSS that Tailwind cannot fully handle)
+*/
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--color-dark-blue); }
 ::-webkit-scrollbar-thumb { background: var(--color-primary-blue); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-accent-teal); }
+
+/*
+  Fix for the custom Tailwind 'animate-pulse' 
+  Since you are using animate-pulse on the badge, 
+  this ensures the standard pulse animation has a solid starting point.
+*/
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

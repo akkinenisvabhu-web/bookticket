@@ -1,3 +1,5 @@
+// tailwind.config.ts
+
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
@@ -22,6 +24,8 @@ const config: Config = {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
         'slide-up': 'slideUp 0.6s ease-out forwards',
         'pulse-light': 'pulseLight 1.5s infinite alternate',
+        // ADDED: Standard Tailwind 'pulse' animation definition
+        'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         fadeIn: {
@@ -35,6 +39,11 @@ const config: Config = {
         pulseLight: {
           '0%, 100%': { opacity: '0.8' },
           '50%': { opacity: '1' },
+        },
+        // ADDED: Standard Tailwind 'pulse' keyframes
+        pulse: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '.5' },
         }
       }
     },

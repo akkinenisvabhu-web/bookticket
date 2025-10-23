@@ -50,21 +50,33 @@ export default function ShowPage({ show }: ShowPageProps) {
     const ticketsLeft = show.totalTickets - show.ticketsSold;
     const isFewTicketsLeft = ticketsLeft > 0 && ticketsLeft <= 10;
 
+    // Enhanced style for the ticket counter badge
+    const ticketBadgeClasses = ticketsLeft > 0
+        ? isFewTicketsLeft
+            ? 'bg-neon-pink text-white animate-pulse shadow-md shadow-neon-pink/50'
+            : 'bg-accent-teal text-white'
+        : 'bg-gray-600 text-off-white';
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-dark-blue p-4 font-space-grotesk text-off-white">
             <Head><title>Electroflix - {show.name}</title></Head>
-            <div className="w-full max-w-5xl animate-fade-in overflow-hidden rounded-xl border border-primary-blue/30 bg-gray-800 shadow-2xl md:flex">
+            
+            {/* Main Card Container */}
+            <div className="w-full max-w-5xl animate-fade-in overflow-hidden rounded-2xl border border-primary-blue/30 bg-gray-900 shadow-2xl shadow-primary-blue/20 md:flex">
                 
-                {/* --- START OF UPDATED IMAGE SECTION --- */}
-                <div className="relative w-full md:w-1/2 h-80 md:h-auto bg-black flex items-center justify-center">
+                {/* --- UPDATED IMAGE SECTION (with Overlay) --- */}
+                <div className="relative w-full md:w-1/2 h-96 md:h-auto bg-black flex items-center justify-center">
                     <img
-                        className="max-w-full max-h-full object-contain rounded-t-xl md:rounded-l-xl md:rounded-t-none"
+                        className="w-full h-full object-cover"
                         src={show.imageUrl}
                         alt={show.name}
                     />
-                     <Link href="/" passHref>
-                        <div className="absolute top-4 left-4 text-off-white bg-gray-700 bg-opacity-70 rounded-full p-3 hover:bg-primary-blue transition-colors duration-300 cursor-pointer shadow-lg">
+                    {/* Subtle Gradient Overlay for blend */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-70"></div>
+                    
+                    {/* Back Button */}
+                    <Link href="/" passHref>
+                        <div className="absolute top-4 left-4 z-10 text-off-white bg-gray-700 bg-opacity-70 rounded-full p-2.5 backdrop-blur-sm hover:bg-neon-pink hover:bg-opacity-90 transition-all duration-300 cursor-pointer shadow-lg">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
@@ -76,17 +88,20 @@ export default function ShowPage({ show }: ShowPageProps) {
                 {/* Details and Booking Section */}
                 <div className="w-full md:w-1/2 p-8 flex flex-col justify-between">
                     <div>
-                        <h1 className="mb-4 text-4xl font-bold text-primary-blue animate-slide-up">{show.name}</h1>
-                        <p className="mb-6 text-lg text-off-white/80 animate-slide-up [animation-delay:100ms]">{show.description}</p>
-                        <div className="mb-6 text-xl font-semibold text-off-white animate-slide-up [animation-delay:200ms]">
+                        {/* Title with Gradient */}
+                        <h1 className="mb-4 text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-accent-teal to-neon-pink animate-slide-up">
+                            {show.name}
+                        </h1>
+                        <p className="mb-6 text-lg text-off-white/80 animate-slide-up [animation-delay:100ms] border-l-4 border-primary-blue pl-4">
+                            {show.description}
+                        </p>
+                        
+                        {/* Tickets Remaining Status */}
+                        <div className="mb-8 text-xl font-semibold text-off-white animate-slide-up [animation-delay:200ms] flex items-center">
                             Tickets Remaining:
-                            {ticketsLeft > 0 ? (
-                                <span className={`ml-3 rounded-full px-3 py-1 ${isFewTicketsLeft ? 'bg-neon-pink text-white animate-pulse' : 'bg-accent-teal text-white'}`}>
-                                    {ticketsLeft}
-                                </span>
-                            ) : (
-                                <span className="ml-3 rounded-full bg-gray-600 px-3 py-1 text-off-white">Sold Out</span>
-                            )}
+                            <span className={`ml-3 rounded-full px-4 py-1 font-bold transition-all duration-300 ${ticketBadgeClasses}`}>
+                                {ticketsLeft > 0 ? ticketsLeft : 'SOLD OUT'}
+                            </span>
                         </div>
                     </div>
 
@@ -95,18 +110,34 @@ export default function ShowPage({ show }: ShowPageProps) {
                             <>
                                 <div className="mb-6">
                                     <label htmlFor="tickets" className="mb-3 block text-sm font-bold text-off-white/90">Number of Tickets (Max 4)</label>
-                                    <select id="tickets" value={ticketCount} onChange={(e) => setTicketCount(Number(e.target.value))} className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 focus:outline-none focus:ring-2 focus:ring-accent-teal">
+                                    <select 
+                                        id="tickets" 
+                                        value={ticketCount} 
+                                        onChange={(e) => setTicketCount(Number(e.target.value))} 
+                                        className="w-full rounded-lg border-2 border-gray-700 bg-gray-800 p-3 text-lg focus:border-accent-teal focus:outline-none focus:ring-2 focus:ring-accent-teal/50 transition-all duration-200"
+                                    >
                                         {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
                                     </select>
                                 </div>
                                 {user ? (
-                                    <button onClick={handleBooking} className="w-full transform rounded-lg bg-primary-blue py-3 font-bold shadow-lg transition-all hover:scale-105 hover:bg-accent-teal hover:shadow-primary-blue/50">Book Ticket</button>
+                                    <button 
+                                        onClick={handleBooking} 
+                                        className="w-full transform rounded-lg bg-neon-pink py-4 text-lg font-bold shadow-xl shadow-neon-pink/40 transition-all duration-300 hover:scale-[1.02] hover:bg-primary-blue hover:shadow-primary-blue/50"
+                                    >
+                                        Book {ticketCount} Ticket{ticketCount > 1 ? 's' : ''} Now
+                                    </button>
                                 ) : (
-                                    <Link href="/login" passHref><div className="w-full cursor-pointer rounded-lg bg-gray-600 py-3 text-center font-bold hover:bg-gray-500">Login to Book</div></Link>
+                                    <Link href="/login" passHref>
+                                        <div className="w-full cursor-pointer rounded-lg bg-gray-700 py-4 text-center text-lg font-bold hover:bg-gray-600 transition-colors duration-300">
+                                            Login to Book Tickets
+                                        </div>
+                                    </Link>
                                 )}
                             </>
                         ) : (
-                            <p className="animate-pulse text-center text-2xl font-bold text-neon-pink">SOLD OUT</p>
+                            <p className="animate-pulse text-center text-3xl font-extrabold text-neon-pink shadow-text-neon-pink/50">
+                                SOLD OUT
+                            </p>
                         )}
                         {message && <p className="mt-4 text-center text-sm text-neon-pink">{message}</p>}
                     </div>
