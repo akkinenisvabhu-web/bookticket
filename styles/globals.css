@@ -2,47 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Variables for Gen Z Aesthetic */
-:root {
-  --color-primary-blue: #007bff;
-  --color-off-white: #f0f0f0;
-  --color-dark-blue: #1a202c;
-  --color-accent-teal: #00bcd4;
-  --color-neon-pink: #ff007f;
-}
-
 body {
+  background-color: #0f0f0f;
+  color: white;
   font-family: 'Space Grotesk', sans-serif;
-  background-color: var(--color-dark-blue);
-  color: var(--color-off-white);
-  overflow-x: hidden;
 }
 
-/* Gen Z background patterns & gradients */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background:
-    radial-gradient(circle at top left, rgba(0, 123, 255, 0.1) 0%, transparent 40%),
-    radial-gradient(circle at bottom right, rgba(255, 0, 127, 0.1) 0%, transparent 40%),
-    linear-gradient(135deg, rgba(26, 32, 44, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%);
-  background-size: cover;
-  opacity: 0.8;
-  z-index: -1;
-  animation: backgroundPulse 20s infinite alternate;
+::-webkit-scrollbar {
+  width: 8px;
 }
-
-@keyframes backgroundPulse {
-  0% { opacity: 0.8; transform: scale(1); }
-  100% { opacity: 0.9; transform: scale(1.05); }
+::-webkit-scrollbar-thumb {
+  background: #a855f7;
+  border-radius: 4px;
 }
-
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--color-dark-blue); }
-::-webkit-scrollbar-thumb { background: var(--color-primary-blue); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-accent-teal); }
+::-webkit-scrollbar-thumb:hover {
+  background: #c084fc;
+}
