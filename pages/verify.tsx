@@ -1,87 +1,118 @@
-import { useState, useContext, useEffect } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import Head from "next/head";
 import Header from "./Header";
-import { AuthContext } from "./_app";
 
-// Dynamic import to avoid SSR issues
-const QrScanner = dynamic(() => import("react-qr-scanner"), { ssr: false });
+// ✅ Dynamically import (no SSR)
+const QrReader = dynamic(() => import("react-qr-reader-es6"), { ssr: false });
 
-export default function VerifyPage() {
-  const user = useContext(AuthContext);
-  const [result, setResult] = useState("");
-  const [ticketData, setTicketData] = useState<any>(null);
-  const [error, setError] = useState("");
+export default function VerifyTicket() {
+  const [scanResult, setScanResult] = useState<string | null>(null);
+  const [ticketInfo, setTicketInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleScan = async (data: any) => {
-    if (data) {
-      setResult(data.text);
-      try {
-        const ticketRef = doc(db, "tickets", data.text);
-        const snap = await getDoc(ticketRef);
+  const checkTicket = async (ticketId: string) => {
+    setLoading(true);
+    setTicketInfo(null);
 
-        if (snap.exists()) {
-          setTicketData(snap.data());
-          setError("");
-        } else {
-          setTicketData(null);
-          setError("❌ Ticket not found in database!");
+    try {
+      const ticketRef = doc(db, "tickets", ticketId);
+      const ticketSnap = await getDoc(ticketRef);
+
+      if (ticketSnap.exists()) {
+        const data = ticketSnap.data();
+        setTicketInfo({
+          valid: true,
+          name: data.userName,
+          rollNumber: data.rollNumber,
+          showId: data.showId,
+        });
+
+        if (typeof window !== "undefined") {
+          try {
+            const audio = new Audio("/beep.mp3");
+            audio.play().catch(() => {});
+            if (navigator.vibrate) navigator.vibrate(200);
+          } catch {}
         }
-      } catch (err) {
-        console.error(err);
-        setError("Error checking ticket.");
+      } else {
+        setTicketInfo({ valid: false });
       }
+    } catch (error) {
+      console.error("Error verifying ticket:", error);
+      setTicketInfo({ valid: false });
     }
-  };
 
-  const handleError = (err: any) => {
-    console.error(err);
-    setError("Camera error or access denied.");
+    setLoading(false);
   };
-
-  // Optional: check if authorized user
-  const isAuthorized = user?.email === "akkinenisvabhu@gmail.com";
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-900 text-white font-space-grotesk">
+      <Head>
+        <title>Verify Ticket – Electroflix</title>
+      </Head>
+
       <Header />
-      <div className="flex flex-col items-center mt-8">
-        <h1 className="text-3xl font-bold mb-4">Scan Ticket QR</h1>
 
-        {!user && <p className="text-gray-400">Please log in to access this page.</p>}
+      <main className="max-w-xl mx-auto px-4 py-10 text-center">
+        <h1 className="text-3xl font-bold mb-6">Scan Ticket QR Code</h1>
 
-        {user && !isAuthorized && (
-          <p className="text-red-500 font-semibold">
-            You are not authorized to access the QR scanner.
+        {/* ✅ QR Scanner */}
+        <div className="flex justify-center mb-6">
+          <QrReader
+            delay={300}
+            onScan={async (data: string | null) => {
+              if (data) {
+                setScanResult(data);
+                await checkTicket(data);
+              }
+            }}
+            onError={(err: unknown) => console.error(err)}
+            style={{ width: "100%", borderRadius: "12px" }}
+            // ✅ @ts-ignore prevents type error since constraints is valid runtime prop
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            constraints={{
+              video: { facingMode: { ideal: "environment" } },
+            }}
+          />
+        </div>
+
+        {loading && <p className="text-gray-400">Verifying ticket...</p>}
+
+        {ticketInfo && (
+          <div
+            className={`mt-6 p-4 rounded-xl ${
+              ticketInfo.valid ? "bg-green-700" : "bg-red-700"
+            }`}
+          >
+            {ticketInfo.valid ? (
+              <>
+                <h2 className="text-2xl font-bold mb-2">✅ Ticket Verified</h2>
+                <p>
+                  <strong>Name:</strong> {ticketInfo.name}
+                </p>
+                <p>
+                  <strong>Roll No:</strong> {ticketInfo.rollNumber}
+                </p>
+                <p>
+                  <strong>Show ID:</strong> {ticketInfo.showId}
+                </p>
+              </>
+            ) : (
+              <h2 className="text-2xl font-bold">❌ Ticket Not Found</h2>
+            )}
+          </div>
+        )}
+
+        {scanResult && (
+          <p className="mt-4 text-sm text-gray-500 break-words">
+            Scanned ID: {scanResult}
           </p>
         )}
-
-        {user && isAuthorized && (
-          <>
-            <div className="w-80 h-80 border-4 border-purple-600 rounded-lg overflow-hidden">
-              <QrScanner
-                delay={300}
-                onError={handleError}
-                onScan={handleScan}
-                style={{ width: "100%", height: "100%" }}
-              />
-            </div>
-
-            {result && <p className="mt-4 text-gray-400">Ticket ID: {result}</p>}
-
-            {ticketData && (
-              <div className="mt-4 p-4 bg-green-800 rounded-lg">
-                <h2 className="text-xl font-bold text-green-300">✅ Valid Ticket</h2>
-                <p>Name: {ticketData.userName}</p>
-                <p>Roll No: {ticketData.rollNumber}</p>
-              </div>
-            )}
-
-            {error && <p className="mt-4 p-4 bg-red-700 rounded-lg">{error}</p>}
-          </>
-        )}
-      </div>
+      </main>
     </div>
   );
 }
