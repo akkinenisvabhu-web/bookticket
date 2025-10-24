@@ -1,9 +1,9 @@
 import { useState, useContext } from "react";
 import { useRouter } from "next/router";
 import { doc, getDoc } from "firebase/firestore";
-import { db, auth } from "../../lib/firebase";
+import { db } from "../../lib/firebase";
 import Head from "next/head";
-import { AuthContext } from "../_app";
+import Header from "../Header";
 
 type Show = {
   id: string;
@@ -37,169 +37,38 @@ export const getServerSideProps = async ({ params }: any) => {
 };
 
 export default function ShowPage({ show }: { show: Show }) {
-  const user = useContext(AuthContext);
   const router = useRouter();
   const ticketsLeft = show.totalTickets - show.ticketsSold;
   const isSoldOut = ticketsLeft <= 0;
-  const isFewLeft = ticketsLeft > 0 && ticketsLeft < 10;
-
-  const [loading, setLoading] = useState(false);
-  const [ticketCount, setTicketCount] = useState(1);
-  const [userName, setUserName] = useState("");
-  const [rollNumber, setRollNumber] = useState("");
-
-  const handleBookNow = async () => {
-    if (!user) {
-      alert("Please login or sign up first!");
-      router.push("/login");
-      return;
-    }
-    if (!userName || !rollNumber) {
-      alert("Please enter your name and roll number.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch("/api/book", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          showId: show.id,
-          ticketCount,
-          userId: user.uid,
-          userName,
-          rollNumber,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        alert(data.message || "Booking failed.");
-        setLoading(false);
-        return;
-      }
-      router.push(`/ticket/${data.ticketId}`);
-    } catch (err) {
-      console.error(err);
-      alert("An error occurred while booking the ticket.");
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white font-space-grotesk">
       <Head>
-        <title>{show.name} – BookTicket</title>
+        <title>{show.name} – Electroflix</title>
       </Head>
 
-      {/* Top buttons */}
-      <div className="flex justify-between items-center px-6 py-4">
-        <h1 className="text-2xl md:text-3xl font-bold text-purple-400">Electroflix</h1>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => router.push("/")}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold"
-          >
-            Home
-          </button>
-          {user ? (
-            <button
-              onClick={() => router.push("/account")}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold"
-            >
-              My Account
-            </button>
-          ) : (
-            <button
-              onClick={() => router.push("/login")}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold"
-            >
-              Login / Sign Up
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Header */}
+      <Header />
 
-      {/* Main content */}
-      <main className="max-w-4xl mx-auto px-4 py-12 flex flex-col md:flex-row gap-8 items-start">
-        {/* Show Image */}
+      <main className="max-w-4xl mx-auto px-4 py-12 flex flex-col md:flex-row gap-8">
         <img
           src={show.imageUrl}
           alt={show.name}
           className="rounded-2xl w-full md:w-1/2 object-cover shadow-lg"
         />
-
-        {/* Details & booking */}
         <div className="flex flex-col gap-4 md:w-1/2">
           <h1 className="text-4xl font-bold">{show.name}</h1>
           <p className="text-gray-400">{show.description}</p>
           <p className="text-gray-400 text-sm">{ticketsLeft} tickets left</p>
-
-          {isFewLeft && (
-            <div className="bg-red-600 text-white text-xs px-2 py-1 rounded-md font-semibold w-max">
-              Hurry Up! Only a few tickets left
-            </div>
-          )}
-          {isSoldOut && (
-            <div className="bg-red-700 text-white text-xs px-2 py-1 rounded-md font-semibold w-max">
-              SOLD OUT
-            </div>
-          )}
-
-          {/* Only show inputs if user logged in */}
-          {user && !isSoldOut && (
-            <>
-              <input
-                type="text"
-                placeholder="Your Name"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                className="mt-4 px-3 py-2 rounded-lg text-black w-full"
-              />
-              <input
-                type="text"
-                placeholder="Roll Number"
-                value={rollNumber}
-                onChange={(e) => setRollNumber(e.target.value)}
-                className="px-3 py-2 rounded-lg text-black w-full"
-              />
-
-              {/* Ticket Count */}
-              <div className="flex items-center gap-4 mt-2">
-                <button
-                  onClick={() => setTicketCount((prev) => Math.max(prev - 1, 1))}
-                  className="px-3 py-1 bg-gray-700 rounded"
-                >
-                  -
-                </button>
-                <span>{ticketCount}</span>
-                <button
-                  onClick={() => setTicketCount((prev) => Math.min(prev + 1, 3))}
-                  className="px-3 py-1 bg-gray-700 rounded"
-                >
-                  +
-                </button>
-                <span className="text-sm text-gray-400">Max 3 per person</span>
-              </div>
-            </>
-          )}
-
           <button
-            disabled={isSoldOut || loading}
-            onClick={handleBookNow}
-            className={`mt-4 w-full md:w-auto px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+            disabled={isSoldOut}
+            className={`mt-4 w-full md:w-auto px-6 py-2 rounded-lg font-semibold ${
               isSoldOut
                 ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                 : "bg-purple-600 text-white hover:bg-purple-700"
             }`}
           >
-            {loading
-              ? "Booking..."
-              : !user
-              ? "Login / Sign Up to Book"
-              : isSoldOut
-              ? "Sold Out"
-              : "Book Now"}
+            {isSoldOut ? "Sold Out" : "Book Now"}
           </button>
         </div>
       </main>
