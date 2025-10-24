@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { auth, signInWithGoogle } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/router";
+import Header from "../pages/Header";
 
 export default function Login() {
   const router = useRouter();
@@ -11,12 +12,11 @@ export default function Login() {
   const [user, setUser] = useState<any>(null);
   const [error, setError] = useState("");
 
-  // Check if already logged in
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((usr) => {
       if (usr) {
         setUser(usr);
-        router.push("/"); // redirect to home
+        router.push("/"); 
       } else {
         setUser(null);
       }
@@ -29,7 +29,7 @@ export default function Login() {
     setError("");
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/"); // redirect after login
+      router.push("/"); 
     } catch (err: any) {
       setError(err.message);
     }
@@ -39,7 +39,7 @@ export default function Login() {
     setError("");
     try {
       await signInWithGoogle();
-      router.push("/"); // redirect after login
+      router.push("/"); 
     } catch (err: any) {
       setError(err.message);
     }
@@ -48,56 +48,60 @@ export default function Login() {
   if (user) return <p className="text-center mt-20">Redirecting...</p>;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white px-4">
-      <h1 className="text-3xl font-bold mb-6">Login</h1>
+    <div className="flex flex-col min-h-screen bg-gray-900 text-white">
+      <Header />
 
-      {error && (
-        <p className="bg-red-600 p-2 rounded mb-4 text-center">{error}</p>
-      )}
+      <main className="flex flex-col items-center justify-center flex-1 px-4 py-12">
+        <h1 className="text-3xl font-bold mb-6">Login</h1>
 
-      <form
-        onSubmit={handleEmailLogin}
-        className="flex flex-col gap-4 w-full max-w-sm"
-      >
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="p-3 rounded bg-gray-800 text-white focus:outline-none"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="p-3 rounded bg-gray-800 text-white focus:outline-none"
-          required
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 p-3 rounded hover:bg-blue-700 transition"
+        {error && (
+          <p className="bg-red-600 p-2 rounded mb-4 text-center">{error}</p>
+        )}
+
+        <form
+          onSubmit={handleEmailLogin}
+          className="flex flex-col gap-4 w-full max-w-sm"
         >
-          Login
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="p-3 rounded bg-gray-800 text-white focus:outline-none"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="p-3 rounded bg-gray-800 text-white focus:outline-none"
+            required
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 p-3 rounded hover:bg-blue-700 transition"
+          >
+            Login
+          </button>
+        </form>
+
+        <div className="my-4">OR</div>
+
+        <button
+          onClick={handleGoogleLogin}
+          className="bg-red-600 p-3 rounded hover:bg-red-700 transition"
+        >
+          Login with Google
         </button>
-      </form>
 
-      <div className="my-4">OR</div>
-
-      <button
-        onClick={handleGoogleLogin}
-        className="bg-red-600 p-3 rounded hover:bg-red-700 transition"
-      >
-        Login with Google
-      </button>
-
-      <p className="mt-4">
-        Don’t have an account?{" "}
-        <a href="/signup" className="underline text-blue-400">
-          Sign Up
-        </a>
-      </p>
+        <p className="mt-4">
+          Don’t have an account?{" "}
+          <a href="/signup" className="underline text-blue-400">
+            Sign Up
+          </a>
+        </p>
+      </main>
     </div>
   );
 }
