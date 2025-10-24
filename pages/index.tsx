@@ -43,10 +43,11 @@ const HomePage: NextPage<HomePageProps> = ({ shows }) => {
 
       <main className="max-w-6xl mx-auto px-4 py-8 flex flex-col gap-8">
         {/* Title */}
-        <h2 className="text-5xl font-extrabold bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 bg-clip-text text-transparent text-center mb-6">
-          Discover Shows
-        </h2>
-
+        <div className="text-left mb-6">
+         <h1 className="text-5xl font-extrabold bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
+           Electroflix
+         </h1>
+        </div>
         {/* Shows List */}
         <div className="flex space-x-6 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800 py-4">
           {shows.map((show) => (
