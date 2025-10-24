@@ -1,78 +1,103 @@
 // pages/login.tsx
-import { useState, useContext } from "react";
-import { auth } from "../lib/firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { auth, signInWithGoogle } from "@/lib/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/router";
-import { AuthContext } from "./_app";
 
-export default function LoginPage() {
-  const user = useContext(AuthContext);
+export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignup, setIsSignup] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [error, setError] = useState("");
 
-  if (user) {
-    router.push("/"); // already logged in
-    return null;
-  }
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      if (isSignup) {
-        await createUserWithEmailAndPassword(auth, email, password);
+  // Check if already logged in
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((usr) => {
+      if (usr) {
+        setUser(usr);
+        router.push("/"); // redirect to home
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        setUser(null);
       }
-      router.push("/"); // redirect home after login
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push("/"); // redirect after login
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
     }
-    setLoading(false);
   };
 
+  const handleGoogleLogin = async () => {
+    setError("");
+    try {
+      await signInWithGoogle();
+      router.push("/"); // redirect after login
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  if (user) return <p className="text-center mt-20">Redirecting...</p>;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white font-space-grotesk">
-      <div className="bg-gray-800 p-8 rounded-2xl shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">{isSignup ? "Sign Up" : "Login"}</h1>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="px-4 py-2 rounded-lg text-black"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="px-4 py-2 rounded-lg text-black"
-            required
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold"
-            disabled={loading}
-          >
-            {loading ? "Processing..." : isSignup ? "Sign Up" : "Login"}
-          </button>
-        </form>
-        <p className="mt-4 text-center text-gray-400 text-sm">
-          {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
-          <button
-            onClick={() => setIsSignup(!isSignup)}
-            className="text-purple-400 underline"
-          >
-            {isSignup ? "Login" : "Sign Up"}
-          </button>
-        </p>
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white px-4">
+      <h1 className="text-3xl font-bold mb-6">Login</h1>
+
+      {error && (
+        <p className="bg-red-600 p-2 rounded mb-4 text-center">{error}</p>
+      )}
+
+      <form
+        onSubmit={handleEmailLogin}
+        className="flex flex-col gap-4 w-full max-w-sm"
+      >
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="p-3 rounded bg-gray-800 text-white focus:outline-none"
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="p-3 rounded bg-gray-800 text-white focus:outline-none"
+          required
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 p-3 rounded hover:bg-blue-700 transition"
+        >
+          Login
+        </button>
+      </form>
+
+      <div className="my-4">OR</div>
+
+      <button
+        onClick={handleGoogleLogin}
+        className="bg-red-600 p-3 rounded hover:bg-red-700 transition"
+      >
+        Login with Google
+      </button>
+
+      <p className="mt-4">
+        Don’t have an account?{" "}
+        <a href="/signup" className="underline text-blue-400">
+          Sign Up
+        </a>
+      </p>
     </div>
   );
 }
