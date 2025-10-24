@@ -1,61 +1,72 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { db } from "../../lib/firebase";
-import { doc, runTransaction, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { db } from '../../lib/firebase';
+import { doc, runTransaction, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-type ResponseData = { message: string; ticketId?: string; };
+// --- UPDATED RESPONSE TYPE ---
+// Now returns an array of ticket IDs
+type ResponseData = { message: string; ticketIds?: string[]; } 
 
 export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+    req: NextApiRequest,
+    res: NextApiResponse<ResponseData>
 ) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
 
-  const { showId, ticketCount, userId, userName, rollNumber } = req.body;
+    const { showId, ticketCount, userId } = req.body;
 
-  if (
-    !showId ||
-    !ticketCount ||
-    !userId ||
-    !userName ||
-    !rollNumber ||
-    ticketCount < 1 ||
-    ticketCount > 3
-  ) {
-    return res.status(400).json({ message: "Invalid booking request." });
-  }
+    if (!showId || !ticketCount || !userId || ticketCount > 4 || ticketCount < 1) {
+        return res.status(400).json({ message: 'Invalid booking request.' });
+    }
 
-  const showRef = doc(db, "shows", showId);
+    const showRef = doc(db, 'shows', showId);
 
-  try {
-    const newTicketId = await runTransaction(db, async (transaction) => {
-      const showDoc = await transaction.get(showRef);
-      if (!showDoc.exists()) throw new Error("Show does not exist!");
+    try {
+        // --- UPDATED TRANSACTION LOGIC ---
+        const newTicketIds = await runTransaction(db, async (transaction) => {
+            const showDoc = await transaction.get(showRef);
 
-      const newTicketsSold = showDoc.data().ticketsSold + ticketCount;
-      if (newTicketsSold > showDoc.data().totalTickets)
-        throw new Error("Not enough tickets available!");
+            if (!showDoc.exists()) {
+                throw new Error("Show does not exist!");
+            }
 
-      // Update tickets sold
-      transaction.update(showRef, { ticketsSold: newTicketsSold });
+            const newTicketsSold = showDoc.data().ticketsSold + ticketCount;
+            if (newTicketsSold > showDoc.data().totalTickets) {
+                throw new Error("Not enough tickets available!");
+            }
 
-      // Create ticket document
-      const ticketRef = await addDoc(collection(db, "tickets"), {
-        userId,
-        userName,       // store user name
-        rollNumber,     // store roll number
-        showId,
-        showName: showDoc.data().name,
-        ticketCount,
-        purchaseDate: serverTimestamp(),
-      });
+            // 1. Update the ticketsSold count
+            transaction.update(showRef, { ticketsSold: newTicketsSold });
+            
+            const showName = showDoc.data().name;
+            const ticketRefs = [];
 
-      return ticketRef.id;
-    });
+            // 2. Loop to create multiple unique ticket documents
+            for (let i = 0; i < ticketCount; i++) {
+                const ticketData = {
+                    userId: userId,
+                    showId: showId,
+                    showName: showName,
+                    // Use index to generate unique data for QR code payload
+                    guestIndex: i + 1, 
+                    totalGuests: ticketCount,
+                    purchaseDate: serverTimestamp()
+                };
+                
+                // Add a new document and store its reference
+                const newTicketRef = doc(collection(db, "tickets"));
+                transaction.set(newTicketRef, ticketData);
+                ticketRefs.push(newTicketRef.id);
+            }
 
-    res.status(200).json({ message: "Booking successful!", ticketId: newTicketId });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message || "Internal server error" });
-  }
+            return ticketRefs; // Return array of new IDs
+        });
+
+        // Redirect the user to the *first* ticket ID for viewing
+        res.status(200).json({ message: 'Booking successful!', ticketIds: newTicketIds });
+
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || 'An internal error occurred' });
+    }
 }

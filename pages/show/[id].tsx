@@ -1,179 +1,152 @@
-// pages/show/[id].tsx
-import { useState, useContext } from "react";
-import { useRouter } from "next/router";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../lib/firebase";
-import Head from "next/head";
-import Header from "../Header";
-import { AuthContext } from "../_app";
+import { useState, useEffect } from 'react';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { db, auth } from '../../lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import Link from 'next/link';
+import type { GetStaticPaths, GetStaticProps } from 'next';
+import Head from 'next/head';
 
-type Show = {
-  id: string;
-  name: string;
-  description: string;
-  imageUrl: string;
-  totalTickets: number;
-  ticketsSold: number;
+type Show = { id: string; name: string; description: string; imageUrl: string; totalTickets: number; ticketsSold: number; };
+type ShowPageProps = { show: Show; };
+
+export const getStaticPaths: GetStaticPaths = async () => {
+    // ... (rest of the function is the same)
+    const querySnapshot = await getDocs(collection(db, "shows"));
+    const paths = querySnapshot.docs.map(doc => ({ params: { id: doc.id } }));
+    return { paths, fallback: 'blocking' };
 };
 
-export const getServerSideProps = async ({ params }: any) => {
-  const id = params?.id as string;
-  const docRef = doc(db, "shows", id);
-  const snapshot = await getDoc(docRef);
-
-  if (!snapshot.exists()) return { notFound: true };
-
-  const data = snapshot.data();
-  return {
-    props: {
-      show: {
-        id,
-        name: data.name ?? "Untitled Show",
-        description: data.description ?? "No description available.",
-        imageUrl: data.imageUrl ?? "/show1.png",
-        totalTickets: data.totalTickets ?? 0,
-        ticketsSold: data.ticketsSold ?? 0,
-      } as Show,
-    },
-  };
+export const getStaticProps: GetStaticProps = async ({ params }) => {
+    // ... (rest of the function is the same)
+    const docRef = doc(db, 'shows', params?.id as string);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return { notFound: true };
+    return { props: { show: { id: docSnap.id, ...docSnap.data() } as Show }, revalidate: 60 };
 };
 
-export default function ShowPage({ show }: { show: Show }) {
-  const router = useRouter();
-  const user = useContext(AuthContext);
-  const ticketsLeft = show.totalTickets - show.ticketsSold;
-  const isSoldOut = ticketsLeft <= 0;
+export default function ShowPage({ show }: ShowPageProps) {
+    const [ticketCount, setTicketCount] = useState(1);
+    const [user, setUser] = useState<User | null>(null);
+    const [message, setMessage] = useState('');
 
-  const [ticketCount, setTicketCount] = useState(1);
-  const [userName, setUserName] = useState("");
-  const [rollNumber, setRollNumber] = useState("");
-  const [loading, setLoading] = useState(false);
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, setUser);
+        return () => unsubscribe();
+    }, []);
 
-  const handleBookNow = async () => {
-    if (!user) {
-      alert("Please log in first to book tickets.");
-      router.push("/login");
-      return;
-    }
+    const handleBooking = async () => {
+        if (!user) { setMessage('Please log in to book tickets.'); return; }
+        setMessage('Processing your booking...');
+        try {
+            const res = await fetch('/api/book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ showId: show.id, ticketCount, userId: user.uid }),
+            });
+            const data = await res.json();
+            if (res.ok) { 
+                // FIX: Redirect to the first generated ticket ID
+                const firstTicketId = data.ticketIds[0];
+                window.location.href = `/ticket/${firstTicketId}`; 
+            }
+            else { setMessage(`Error: ${data.message}`); }
+        } catch (error) { setMessage('An unexpected error occurred.'); }
+    };
 
-    if (!userName.trim() || !rollNumber.trim()) {
-      alert("Please fill in your Name and Roll Number before booking.");
-      return;
-    }
+    const ticketsLeft = show.totalTickets - show.ticketsSold;
+    const isFewTicketsLeft = ticketsLeft > 0 && ticketsLeft <= 10;
 
-    setLoading(true);
+    // Enhanced style for the ticket counter badge
+    const ticketBadgeClasses = ticketsLeft > 0
+        ? isFewTicketsLeft
+            ? 'bg-neon-pink text-white animate-pulse shadow-md shadow-neon-pink/50'
+            : 'bg-accent-teal text-white'
+        : 'bg-gray-600 text-off-white';
 
-    try {
-      const response = await fetch("/api/book", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          showId: show.id,
-          ticketCount,
-          userId: user.uid,
-          userName,
-          rollNumber,
-        }),
-      });
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-dark-blue p-4 font-space-grotesk text-off-white">
+            <Head><title>Electroflix - {show.name}</title></Head>
+            
+            {/* Main Card Container */}
+            <div className="w-full max-w-5xl animate-fade-in overflow-hidden rounded-2xl border border-primary-blue/30 bg-gray-900 shadow-2xl shadow-primary-blue/20 md:flex">
+                
+                {/* Poster Section (Small & Contained) */}
+                <div className="relative w-full md:w-2/5 h-[30rem] md:h-auto bg-black flex items-center justify-center p-8 transition-all duration-300">
+                    <img
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-xl"
+                        src={show.imageUrl}
+                        alt={show.name}
+                    />
+                    
+                    {/* Back Button */}
+                    <Link href="/" passHref>
+                        <div className="absolute top-4 left-4 z-10 text-off-white bg-gray-700 bg-opacity-70 rounded-full p-2.5 backdrop-blur-sm hover:bg-neon-pink hover:bg-opacity-90 transition-all duration-300 cursor-pointer shadow-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </div>
+                    </Link>
+                </div>
 
-      const data = await response.json();
+                {/* Details and Booking Section */}
+                <div className="w-full md:w-3/5 p-8 flex flex-col justify-between">
+                    <div>
+                        {/* Title with Gradient */}
+                        <h1 className="mb-4 text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-accent-teal to-neon-pink animate-slide-up">
+                            {show.name}
+                        </h1>
+                        <p className="mb-6 text-lg text-off-white/80 animate-slide-up [animation-delay:100ms] border-l-4 border-primary-blue pl-4">
+                            {show.description}
+                        </p>
+                        
+                        {/* Tickets Remaining Status */}
+                        <div className="mb-8 text-xl font-semibold text-off-white animate-slide-up [animation-delay:200ms] flex items-center">
+                            Tickets Remaining:
+                            <span className={`ml-3 rounded-full px-4 py-1 font-bold transition-all duration-300 ${ticketBadgeClasses}`}>
+                                {ticketsLeft > 0 ? ticketsLeft : 'SOLD OUT'}
+                            </span>
+                        </div>
+                    </div>
 
-      if (!response.ok) {
-        alert(data.message || "Booking failed.");
-        setLoading(false);
-        return;
-      }
-
-      router.push(`/ticket/${data.ticketId}`);
-    } catch (error) {
-      console.error(error);
-      alert("An error occurred while booking your ticket.");
-      setLoading(false);
-    }
-  };
-
-  const isBookDisabled =
-    isSoldOut || loading || !userName.trim() || !rollNumber.trim();
-
-  return (
-    <div className="min-h-screen bg-gray-900 text-white font-space-grotesk">
-      <Head>
-        <title>{show.name} – Electroflix</title>
-      </Head>
-
-      <Header />
-
-      <main className="max-w-4xl mx-auto px-4 py-12 flex flex-col md:flex-row gap-8">
-        <img
-          src={show.imageUrl}
-          alt={show.name}
-          className="rounded-2xl w-full md:w-1/2 object-cover shadow-lg"
-        />
-
-        <div className="flex flex-col gap-4 md:w-1/2">
-          <h1 className="text-4xl font-bold">{show.name}</h1>
-          <p className="text-gray-400">{show.description}</p>
-          <p className="text-gray-400 text-sm">{ticketsLeft} tickets left</p>
-
-          {!isSoldOut && (
-            <>
-              <h2 className="text-xl font-semibold mt-4 mb-2">
-                Fill Your Details
-              </h2>
-
-              <input
-                type="text"
-                placeholder="Your Name"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                className="mt-2 px-3 py-2 rounded-lg text-black w-full"
-                required
-              />
-              <input
-                type="text"
-                placeholder="Roll Number"
-                value={rollNumber}
-                onChange={(e) => setRollNumber(e.target.value)}
-                className="px-3 py-2 rounded-lg text-black w-full"
-                required
-              />
-
-              <div className="flex items-center gap-4 mt-3">
-                <button
-                  onClick={() => setTicketCount((prev) => Math.max(prev - 1, 1))}
-                  className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600"
-                >
-                  -
-                </button>
-                <span>{ticketCount}</span>
-                <button
-                  onClick={() => setTicketCount((prev) => Math.min(prev + 1, 3))}
-                  className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600"
-                >
-                  +
-                </button>
-                <span className="text-sm text-gray-400">Max 3 per person</span>
-              </div>
-            </>
-          )}
-
-          <button
-            disabled={isBookDisabled}
-            onClick={handleBookNow}
-            className={`mt-4 w-full md:w-auto px-6 py-2 rounded-lg font-semibold transition-all ${
-              isBookDisabled
-                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                : "bg-purple-600 text-white hover:bg-purple-700"
-            }`}
-          >
-            {loading
-              ? "Booking..."
-              : isSoldOut
-              ? "Sold Out"
-              : "Book Now"}
-          </button>
+                    <div className="mt-auto animate-slide-up [animation-delay:300ms] p-6 bg-gray-800 rounded-xl border border-gray-700">
+                        <h2 className="text-2xl font-bold mb-4 text-primary-blue">Book Your Tickets</h2>
+                        {ticketsLeft > 0 ? (
+                            <>
+                                <div className="mb-6">
+                                    <label htmlFor="tickets" className="mb-3 block text-sm font-bold text-off-white/90">Number of Tickets (Max 4)</label>
+                                    <select 
+                                        id="tickets" 
+                                        value={ticketCount} 
+                                        onChange={(e) => setTicketCount(Number(e.target.value))} 
+                                        className="w-full rounded-lg border-2 border-gray-700 bg-gray-900 p-3 text-lg focus:border-accent-teal focus:outline-none focus:ring-2 focus:ring-accent-teal/50 transition-all duration-200"
+                                    >
+                                        {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
+                                    </select>
+                                </div>
+                                {user ? (
+                                    <button 
+                                        onClick={handleBooking} 
+                                        className="w-full transform rounded-lg bg-neon-pink py-4 text-lg font-bold shadow-xl shadow-neon-pink/40 transition-all duration-300 hover:scale-[1.02] hover:bg-primary-blue hover:shadow-primary-blue/50"
+                                    >
+                                        Book {ticketCount} Ticket{ticketCount > 1 ? 's' : ''} Now
+                                    </button>
+                                ) : (
+                                    <Link href="/login" passHref>
+                                        <div className="w-full cursor-pointer rounded-lg bg-gray-700 py-4 text-center text-lg font-bold hover:bg-gray-600 transition-colors duration-300">
+                                            Login to Book Tickets
+                                        </div>
+                                    </Link>
+                                )}
+                            </>
+                        ) : (
+                            <p className="animate-pulse text-center text-3xl font-extrabold text-neon-pink">
+                                SOLD OUT
+                            </p>
+                        )}
+                        {message && <p className="mt-4 text-center text-sm text-neon-pink">{message}</p>}
+                    </div>
+                </div>
+            </div>
         </div>
-      </main>
-    </div>
-  );
+    );
 }
