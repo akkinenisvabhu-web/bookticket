@@ -43,6 +43,7 @@ export default function ShowPage({ show }: { show: Show }) {
   const user = useContext(AuthContext);
   const ticketsLeft = show.totalTickets - show.ticketsSold;
   const isSoldOut = ticketsLeft <= 0;
+
   const [ticketCount, setTicketCount] = useState(1);
   const [userName, setUserName] = useState("");
   const [rollNumber, setRollNumber] = useState("");
@@ -55,8 +56,8 @@ export default function ShowPage({ show }: { show: Show }) {
       return;
     }
 
-    if (!userName || !rollNumber) {
-      alert("Please enter your Name and Roll Number.");
+    if (!userName.trim() || !rollNumber.trim()) {
+      alert("Please fill in your Name and Roll Number before booking.");
       return;
     }
 
@@ -83,7 +84,6 @@ export default function ShowPage({ show }: { show: Show }) {
         return;
       }
 
-      // Redirect to ticket confirmation page
       router.push(`/ticket/${data.ticketId}`);
     } catch (error) {
       console.error(error);
@@ -92,13 +92,15 @@ export default function ShowPage({ show }: { show: Show }) {
     }
   };
 
+  const isBookDisabled =
+    isSoldOut || loading || !userName.trim() || !rollNumber.trim();
+
   return (
     <div className="min-h-screen bg-gray-900 text-white font-space-grotesk">
       <Head>
         <title>{show.name} – Electroflix</title>
       </Head>
 
-      {/* Header */}
       <Header />
 
       <main className="max-w-4xl mx-auto px-4 py-12 flex flex-col md:flex-row gap-8">
@@ -117,6 +119,11 @@ export default function ShowPage({ show }: { show: Show }) {
 
           {!isSoldOut && (
             <>
+              {/* Heading for user details */}
+              <h2 className="mt-4 text-xl font-semibold text-purple-400">
+                Fill Your Details
+              </h2>
+
               {/* User Details */}
               <input
                 type="text"
@@ -124,6 +131,7 @@ export default function ShowPage({ show }: { show: Show }) {
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
                 className="mt-2 px-3 py-2 rounded-lg text-black w-full"
+                required
               />
               <input
                 type="text"
@@ -131,6 +139,7 @@ export default function ShowPage({ show }: { show: Show }) {
                 value={rollNumber}
                 onChange={(e) => setRollNumber(e.target.value)}
                 className="px-3 py-2 rounded-lg text-black w-full"
+                required
               />
 
               {/* Ticket Counter */}
@@ -154,10 +163,10 @@ export default function ShowPage({ show }: { show: Show }) {
           )}
 
           <button
-            disabled={isSoldOut || loading}
+            disabled={isBookDisabled}
             onClick={handleBookNow}
             className={`mt-4 w-full md:w-auto px-6 py-2 rounded-lg font-semibold transition-all ${
-              isSoldOut
+              isBookDisabled
                 ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                 : "bg-purple-600 text-white hover:bg-purple-700"
             }`}
