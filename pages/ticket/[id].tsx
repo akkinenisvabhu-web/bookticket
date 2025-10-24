@@ -3,14 +3,16 @@ import { db } from '../../lib/firebase';
 import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 
-// Update type definition to reflect the new structure (guest index and total guests)
+// Update type definition to reflect the new structure
 type Ticket = { 
     id: string; 
     showName: string; 
-    guestIndex: number; // e.g., 1
-    totalGuests: number; // e.g., 3
+    guestIndex: number; 
+    totalGuests: number; 
     purchaseDate: string; 
     userId: string;
+    userName: string; // NEW FIELD
+    userRollNo: string; // NEW FIELD
 };
 type TicketPageProps = { ticket: Ticket; };
 
@@ -25,10 +27,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     const ticketData: Ticket = { 
         id: ticketSnap.id, 
         showName: data.showName, 
-        guestIndex: data.guestIndex, // New field
-        totalGuests: data.totalGuests, // New field
+        guestIndex: data.guestIndex,
+        totalGuests: data.totalGuests,
         purchaseDate: purchaseTimestamp.toDate().toLocaleString(),
-        userId: data.userId
+        userId: data.userId,
+        userName: data.userName, // Retrieved new field
+        userRollNo: data.userRollNo // Retrieved new field
     };
     return { props: { ticket: ticketData }};
 };
@@ -38,15 +42,17 @@ export default function TicketPage({ ticket }: TicketPageProps) {
     const qrCodeData = JSON.stringify({
         id: ticket.id,
         show: ticket.showName,
-        guest: ticket.guestIndex
+        name: ticket.userName, // Include name in QR code data
+        rollno: ticket.userRollNo
     });
+    // Ensure data is URL encoded
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrCodeData)}&bgcolor=1a202c&color=f0f0f0&qzone=1`;
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-dark-blue p-4 font-space-grotesk text-off-white">
             <Head><title>Electroflix - Ticket {ticket.guestIndex} of {ticket.totalGuests}</title></Head>
             <div className="w-full max-w-md animate-fade-in">
-                <h1 className="mb-8 text-center text-3xl font-bold text-primary-blue">Your Electroflix Pass</h1>
+                <h1 className="mb-8 text-center text-3xl font-bold text-primary-blue">Your Virtual Pass</h1>
                 <div className="overflow-hidden rounded-2xl border-2 border-primary-blue/50 bg-gray-800 shadow-2xl">
                     <div className="bg-gradient-to-br from-primary-blue to-accent-teal p-8">
                         <div className="flex justify-between items-center">
@@ -61,14 +67,24 @@ export default function TicketPage({ ticket }: TicketPageProps) {
                             </div>
                         </div>
                     </div>
+                    
+                    {/* NEW: USER AND ROLL NUMBER INFO */}
+                    <div className="p-4 border-b border-gray-700">
+                        <div className="text-center">
+                            <p className="text-lg font-bold text-off-white/90">Ticket Holder</p>
+                            <p className="text-3xl font-extrabold text-neon-pink uppercase">{ticket.userName}</p>
+                            <p className="text-sm text-off-white/70 mt-1">Roll No: {ticket.userRollNo}</p>
+                        </div>
+                    </div>
+
                     <div className="p-8 text-center">
                         <p className="mb-4 text-sm font-bold uppercase tracking-widest text-primary-blue">Scan at Entry</p>
                         <div className="mb-6 flex justify-center">
-                            <img src={qrCodeUrl} alt="QR Code" className="rounded-lg border-4 border-primary-blue shadow-xl" />
+                            <img src={qrCodeUrl} alt={`QR Code for Ticket ${ticket.id}`} className="rounded-lg border-4 border-primary-blue shadow-xl" />
                         </div>
                         <div className="flex flex-col space-y-3">
                             <div className="bg-gray-700 p-3 rounded-lg text-left">
-                                <p className="text-xs uppercase text-off-white/70">Ticket ID</p>
+                                <p className="text-xs uppercase text-off-white/70">Unique Ticket ID</p>
                                 <p className="font-mono text-sm break-words">{ticket.id}</p>
                             </div>
                             <div className="flex justify-between items-center bg-gray-700 p-3 rounded-lg">

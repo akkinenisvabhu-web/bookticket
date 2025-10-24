@@ -10,14 +10,12 @@ type Show = { id: string; name: string; description: string; imageUrl: string; t
 type ShowPageProps = { show: Show; };
 
 export const getStaticPaths: GetStaticPaths = async () => {
-    // ... (rest of the function is the same)
     const querySnapshot = await getDocs(collection(db, "shows"));
     const paths = querySnapshot.docs.map(doc => ({ params: { id: doc.id } }));
     return { paths, fallback: 'blocking' };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
-    // ... (rest of the function is the same)
     const docRef = doc(db, 'shows', params?.id as string);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return { notFound: true };
@@ -26,6 +24,8 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 
 export default function ShowPage({ show }: ShowPageProps) {
     const [ticketCount, setTicketCount] = useState(1);
+    const [userName, setUserName] = useState(''); // NEW STATE
+    const [userRollNo, setUserRollNo] = useState(''); // NEW STATE
     const [user, setUser] = useState<User | null>(null);
     const [message, setMessage] = useState('');
 
@@ -36,16 +36,26 @@ export default function ShowPage({ show }: ShowPageProps) {
 
     const handleBooking = async () => {
         if (!user) { setMessage('Please log in to book tickets.'); return; }
+        if (ticketCount > 0 && (!userName.trim() || !userRollNo.trim())) { // NEW VALIDATION
+            setMessage('Please enter a Name and Roll Number for the booking.');
+            return;
+        }
+        
         setMessage('Processing your booking...');
         try {
             const res = await fetch('/api/book', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ showId: show.id, ticketCount, userId: user.uid }),
+                body: JSON.stringify({ 
+                    showId: show.id, 
+                    ticketCount, 
+                    userId: user.uid,
+                    userName, // PASS NEW DATA
+                    userRollNo // PASS NEW DATA
+                }),
             });
             const data = await res.json();
             if (res.ok) { 
-                // FIX: Redirect to the first generated ticket ID
                 const firstTicketId = data.ticketIds[0];
                 window.location.href = `/ticket/${firstTicketId}`; 
             }
@@ -56,7 +66,6 @@ export default function ShowPage({ show }: ShowPageProps) {
     const ticketsLeft = show.totalTickets - show.ticketsSold;
     const isFewTicketsLeft = ticketsLeft > 0 && ticketsLeft <= 10;
 
-    // Enhanced style for the ticket counter badge
     const ticketBadgeClasses = ticketsLeft > 0
         ? isFewTicketsLeft
             ? 'bg-neon-pink text-white animate-pulse shadow-md shadow-neon-pink/50'
@@ -67,7 +76,6 @@ export default function ShowPage({ show }: ShowPageProps) {
         <div className="flex min-h-screen items-center justify-center bg-dark-blue p-4 font-space-grotesk text-off-white">
             <Head><title>Electroflix - {show.name}</title></Head>
             
-            {/* Main Card Container */}
             <div className="w-full max-w-5xl animate-fade-in overflow-hidden rounded-2xl border border-primary-blue/30 bg-gray-900 shadow-2xl shadow-primary-blue/20 md:flex">
                 
                 {/* Poster Section (Small & Contained) */}
@@ -91,7 +99,7 @@ export default function ShowPage({ show }: ShowPageProps) {
                 {/* Details and Booking Section */}
                 <div className="w-full md:w-3/5 p-8 flex flex-col justify-between">
                     <div>
-                        {/* Title with Gradient */}
+                        {/* Title with Gradient and Description */}
                         <h1 className="mb-4 text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-accent-teal to-neon-pink animate-slide-up">
                             {show.name}
                         </h1>
@@ -112,6 +120,33 @@ export default function ShowPage({ show }: ShowPageProps) {
                         <h2 className="text-2xl font-bold mb-4 text-primary-blue">Book Your Tickets</h2>
                         {ticketsLeft > 0 ? (
                             <>
+                                {/* NEW INPUT FIELDS */}
+                                <div className="mb-4">
+                                    <label htmlFor="name" className="mb-2 block text-sm font-bold text-off-white/90">Full Name (For Ticket)</label>
+                                    <input 
+                                        id="name" 
+                                        type="text" 
+                                        value={userName} 
+                                        onChange={(e) => setUserName(e.target.value)} 
+                                        className="w-full rounded-lg border-2 border-gray-700 bg-gray-900 p-3 text-lg focus:border-neon-pink focus:outline-none focus:ring-2 focus:ring-neon-pink/50 transition-all duration-200"
+                                        placeholder="Enter name for all tickets"
+                                        required
+                                    />
+                                </div>
+                                <div className="mb-6">
+                                    <label htmlFor="rollno" className="mb-2 block text-sm font-bold text-off-white/90">Roll Number</label>
+                                    <input 
+                                        id="rollno" 
+                                        type="text" 
+                                        value={userRollNo} 
+                                        onChange={(e) => setUserRollNo(e.target.value)} 
+                                        className="w-full rounded-lg border-2 border-gray-700 bg-gray-900 p-3 text-lg focus:border-neon-pink focus:outline-none focus:ring-2 focus:ring-neon-pink/50 transition-all duration-200"
+                                        placeholder="Enter roll number"
+                                        required
+                                    />
+                                </div>
+
+                                {/* Ticket Count Selector */}
                                 <div className="mb-6">
                                     <label htmlFor="tickets" className="mb-3 block text-sm font-bold text-off-white/90">Number of Tickets (Max 4)</label>
                                     <select 
@@ -123,6 +158,7 @@ export default function ShowPage({ show }: ShowPageProps) {
                                         {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
                                     </select>
                                 </div>
+
                                 {user ? (
                                     <button 
                                         onClick={handleBooking} 

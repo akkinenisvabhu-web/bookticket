@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '../../lib/firebase';
 import { doc, runTransaction, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-// --- UPDATED RESPONSE TYPE ---
 // Now returns an array of ticket IDs
 type ResponseData = { message: string; ticketIds?: string[]; } 
 
@@ -14,16 +13,16 @@ export default async function handler(
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    const { showId, ticketCount, userId } = req.body;
+    // PULL NEW DATA FROM REQUEST BODY
+    const { showId, ticketCount, userId, userName, userRollNo } = req.body; 
 
-    if (!showId || !ticketCount || !userId || ticketCount > 4 || ticketCount < 1) {
-        return res.status(400).json({ message: 'Invalid booking request.' });
+    if (!showId || !ticketCount || !userId || ticketCount > 4 || ticketCount < 1 || !userName || !userRollNo) {
+        return res.status(400).json({ message: 'Invalid or incomplete booking request.' });
     }
 
     const showRef = doc(db, 'shows', showId);
 
     try {
-        // --- UPDATED TRANSACTION LOGIC ---
         const newTicketIds = await runTransaction(db, async (transaction) => {
             const showDoc = await transaction.get(showRef);
 
@@ -48,7 +47,8 @@ export default async function handler(
                     userId: userId,
                     showId: showId,
                     showName: showName,
-                    // Use index to generate unique data for QR code payload
+                    userName: userName,     // NEW DATA SAVED
+                    userRollNo: userRollNo, // NEW DATA SAVED
                     guestIndex: i + 1, 
                     totalGuests: ticketCount,
                     purchaseDate: serverTimestamp()
@@ -63,7 +63,7 @@ export default async function handler(
             return ticketRefs; // Return array of new IDs
         });
 
-        // Redirect the user to the *first* ticket ID for viewing
+        // Redirect the user to the first ticket ID for viewing
         res.status(200).json({ message: 'Booking successful!', ticketIds: newTicketIds });
 
     } catch (error: any) {
