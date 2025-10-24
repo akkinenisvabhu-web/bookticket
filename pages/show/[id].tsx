@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import { db, auth } from '../../lib/firebase';
+// FIX: Added 'auth' to the import list
+import { db, auth } from '../../lib/firebase'; 
 import { onAuthStateChanged, User } from 'firebase/auth';
 import Link from 'next/link';
 import type { GetStaticPaths, GetStaticProps } from 'next';
@@ -57,7 +58,10 @@ export default function ShowPage({ show }: ShowPageProps) {
             const data = await res.json();
             if (res.ok) { 
                 const firstTicketId = data.ticketIds[0];
-                window.location.href = `/ticket/${firstTicketId}`; 
+                
+                // CRITICAL FIX: Ensure all IDs are passed to the ticket view page
+                const allTicketIds = data.ticketIds.join(',');
+                window.location.href = `/ticket/${firstTicketId}?all_ids=${allTicketIds}`; 
             }
             else { setMessage(`Error: ${data.message}`); }
         } catch (error) { setMessage('An unexpected error occurred.'); }
@@ -129,7 +133,8 @@ export default function ShowPage({ show }: ShowPageProps) {
                                         value={userName} 
                                         onChange={(e) => setUserName(e.target.value)} 
                                         className="w-full rounded-lg border-2 border-gray-700 bg-gray-900 p-3 text-lg focus:border-neon-pink focus:outline-none focus:ring-2 focus:ring-neon-pink/50 transition-all duration-200"
-                                        placeholder="Enter name for all tickets"
+                                        // --- FIX: UPDATED PLACEHOLDER ---
+                                        placeholder="Enter your name (All tickets will have this name)"
                                         required
                                     />
                                 </div>
