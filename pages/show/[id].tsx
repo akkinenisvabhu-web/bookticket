@@ -133,7 +133,6 @@ export default function ShowPage({ show }: ShowPageProps) {
                                         value={userName} 
                                         onChange={(e) => setUserName(e.target.value)} 
                                         className="w-full rounded-lg border-2 border-gray-700 bg-gray-900 p-3 text-lg focus:border-neon-pink focus:outline-none focus:ring-2 focus:ring-neon-pink/50 transition-all duration-200"
-                                        // --- FIX: UPDATED PLACEHOLDER ---
                                         placeholder="Enter your name (All tickets will have this name)"
                                         required
                                     />
@@ -153,14 +152,15 @@ export default function ShowPage({ show }: ShowPageProps) {
 
                                 {/* Ticket Count Selector */}
                                 <div className="mb-6">
-                                    <label htmlFor="tickets" className="mb-3 block text-sm font-bold text-off-white/90">Number of Tickets (Max 4)</label>
+                                    <label htmlFor="tickets" className="mb-3 block text-sm font-bold text-off-white/90">Number of Tickets (Max 3)</label>
                                     <select 
                                         id="tickets" 
                                         value={ticketCount} 
                                         onChange={(e) => setTicketCount(Number(e.target.value))} 
                                         className="w-full rounded-lg border-2 border-gray-700 bg-gray-900 p-3 text-lg focus:border-accent-teal focus:outline-none focus:ring-2 focus:ring-accent-teal/50 transition-all duration-200"
+                                        // --- FIX: Limited options to [1, 2, 3] ---
                                     >
-                                        {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
+                                        {[1, 2, 3].map(n => <option key={n} value={n}>{n}</option>)}
                                     </select>
                                 </div>
 

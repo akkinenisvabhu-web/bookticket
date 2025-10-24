@@ -15,9 +15,10 @@ export default async function handler(
 
     // PULL NEW DATA FROM REQUEST BODY
     const { showId, ticketCount, userId, userName, userRollNo } = req.body; 
-
-    if (!showId || !ticketCount || !userId || ticketCount > 4 || ticketCount < 1 || !userName || !userRollNo) {
-        return res.status(400).json({ message: 'Invalid or incomplete booking request.' });
+    
+    // --- FIX: Changed max ticket count from 4 to 3 ---
+    if (!showId || !ticketCount || !userId || ticketCount > 3 || ticketCount < 1 || !userName || !userRollNo) {
+        return res.status(400).json({ message: 'Invalid or incomplete booking request. Max tickets is 3.' });
     }
 
     const showRef = doc(db, 'shows', showId);
@@ -47,8 +48,8 @@ export default async function handler(
                     userId: userId,
                     showId: showId,
                     showName: showName,
-                    userName: userName,     // NEW DATA SAVED
-                    userRollNo: userRollNo, // NEW DATA SAVED
+                    userName: userName,
+                    userRollNo: userRollNo,
                     guestIndex: i + 1, 
                     totalGuests: ticketCount,
                     purchaseDate: serverTimestamp()
