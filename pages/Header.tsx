@@ -1,45 +1,33 @@
-// components/Header.tsx
+// pages/Header.tsx
+import Link from "next/link";
 import { useRouter } from "next/router";
 
 export default function Header() {
   const router = useRouter();
-
-  // Determine if back button should be shown
-  const showBackButton = router.pathname !== "/";
-
-  const handleBack = () => {
-    // Always go to home if there is no previous page or if current page is login/signup
-    if (router.pathname === "/login" || router.pathname === "/signup") {
-      router.push("/");
-    } else {
-      router.back();
-    }
-  };
+  const isHome = router.pathname === "/";
 
   return (
-    <div className="flex justify-between items-center px-6 py-4 bg-gray-800">
-      {showBackButton && (
-        <button
-          onClick={handleBack}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white font-semibold"
-        >
-          Back
-        </button>
-      )}
+    <header className="flex items-center justify-between px-6 py-4 bg-gray-800 shadow-md">
+      <div className="flex items-center gap-4">
+        {!isHome && (
+          <button
+            onClick={() => router.back()}
+            className="text-white bg-gray-700 px-3 py-1 rounded hover:bg-gray-600"
+          >
+            ← Back
+          </button>
+        )}
+        <Link href="/" className="text-2xl font-bold text-purple-400">
+          Electroflix
+        </Link>
+      </div>
 
-      <h1
-        onClick={() => router.push("/")}
-        className="text-2xl font-bold text-purple-400 cursor-pointer"
-      >
-        Electroflix
-      </h1>
-
-      <button
-        onClick={() => router.push("/account")}
-        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded font-semibold text-white"
+      <Link
+        href="/account"
+        className="text-white bg-purple-600 px-4 py-2 rounded hover:bg-purple-700"
       >
         My Account
-      </button>
-    </div>
+      </Link>
+    </header>
   );
 }

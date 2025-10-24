@@ -5,7 +5,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import Head from "next/head";
 import Header from "../Header";
-import { AuthContext } from "../_app"; // Make sure AuthContext is exported in _app.tsx
+import { AuthContext } from "../_app";
 
 type Show = {
   id: string;
@@ -104,14 +104,12 @@ export default function ShowPage({ show }: { show: Show }) {
       <Header />
 
       <main className="max-w-4xl mx-auto px-4 py-12 flex flex-col md:flex-row gap-8">
-        {/* Show Image */}
         <img
           src={show.imageUrl}
           alt={show.name}
           className="rounded-2xl w-full md:w-1/2 object-cover shadow-lg"
         />
 
-        {/* Details and Booking */}
         <div className="flex flex-col gap-4 md:w-1/2">
           <h1 className="text-4xl font-bold">{show.name}</h1>
           <p className="text-gray-400">{show.description}</p>
@@ -119,12 +117,10 @@ export default function ShowPage({ show }: { show: Show }) {
 
           {!isSoldOut && (
             <>
-              {/* Heading for user details */}
-              <h2 className="mt-4 text-xl font-semibold text-purple-400">
+              <h2 className="text-xl font-semibold mt-4 mb-2">
                 Fill Your Details
               </h2>
 
-              {/* User Details */}
               <input
                 type="text"
                 placeholder="Your Name"
@@ -142,7 +138,6 @@ export default function ShowPage({ show }: { show: Show }) {
                 required
               />
 
-              {/* Ticket Counter */}
               <div className="flex items-center gap-4 mt-3">
                 <button
                   onClick={() => setTicketCount((prev) => Math.max(prev - 1, 1))}

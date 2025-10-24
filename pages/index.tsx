@@ -1,16 +1,10 @@
 // pages/index.tsx
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import Link from "next/link";
 import type { GetStaticProps, NextPage } from "next";
 import Head from "next/head";
-import dynamic from "next/dynamic";
-import { useContext, useState } from "react";
 import Header from "./Header";
-import { AuthContext } from "./_app";
-
-// Dynamic import for QR Scanner (no SSR)
-const QrScanner = dynamic(() => import("react-qr-scanner"), { ssr: false });
 
 type Show = {
   id: string;
@@ -39,40 +33,6 @@ export const getStaticProps: GetStaticProps = async () => {
 };
 
 const HomePage: NextPage<HomePageProps> = ({ shows }) => {
-  const user = useContext(AuthContext);
-  const [scanResult, setScanResult] = useState("");
-  const [ticketData, setTicketData] = useState<any>(null);
-  const [error, setError] = useState("");
-
-  // Only authorized user can scan
-  const isAuthorized = user?.email === "akkinenisvabhu@gmail.com";
-
-  const handleScan = async (data: any) => {
-    if (data) {
-      setScanResult(data.text);
-      try {
-        const ticketRef = doc(db, "tickets", data.text);
-        const snap = await getDoc(ticketRef);
-
-        if (snap.exists()) {
-          setTicketData(snap.data());
-          setError("");
-        } else {
-          setTicketData(null);
-          setError("❌ Ticket not found in database!");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Error checking ticket.");
-      }
-    }
-  };
-
-  const handleError = (err: any) => {
-    console.error(err);
-    setError("Camera error or access denied.");
-  };
-
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 font-space-grotesk">
       <Head>
@@ -82,34 +42,12 @@ const HomePage: NextPage<HomePageProps> = ({ shows }) => {
       <Header />
 
       <main className="max-w-6xl mx-auto px-4 py-8 flex flex-col gap-8">
-        {/* QR Scanner Section */}
-        {user && isAuthorized && (
-          <div className="flex flex-col items-center mb-8">
-            <h2 className="text-3xl font-bold mb-4">Scan Ticket QR</h2>
-            <div className="w-80 h-80 border-4 border-purple-600 rounded-lg overflow-hidden">
-              <QrScanner
-                delay={300}
-                onError={handleError}
-                onScan={handleScan}
-                style={{ width: "100%", height: "100%" }}
-              />
-            </div>
-            {scanResult && <p className="mt-4 text-gray-400">Ticket ID: {scanResult}</p>}
-            {ticketData && (
-              <div className="mt-4 p-4 bg-green-800 rounded-lg text-center">
-                <h2 className="text-xl font-bold text-green-300">✅ Valid Ticket</h2>
-                <p>Name: {ticketData.userName}</p>
-                <p>Roll No: {ticketData.rollNumber}</p>
-              </div>
-            )}
-            {error && <p className="mt-4 p-4 bg-red-700 rounded-lg">{error}</p>}
-          </div>
-        )}
-
-        {/* Shows List */}
+        {/* Title */}
         <h2 className="text-5xl font-extrabold bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 bg-clip-text text-transparent text-center mb-6">
           Discover Shows
         </h2>
+
+        {/* Shows List */}
         <div className="flex space-x-6 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800 py-4">
           {shows.map((show) => (
             <ShowCard key={show.id} {...show} />
