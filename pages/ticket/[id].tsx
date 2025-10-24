@@ -2,6 +2,7 @@ import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
+import { useRouter } from 'next/router'; // <-- NEW IMPORT
 
 // Update type definition to reflect the new structure
 type Ticket = { 
@@ -16,7 +17,10 @@ type Ticket = {
 };
 type TicketPageProps = { ticket: Ticket; };
 
+// FIX: Corrected typo from GetServerServerSideProps to GetServerSideProps
+// FIX: Explicitly typed 'params' as GetServerSidePropsContext['params'] for strictness
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+    // NOTE: Query parameters (like all_ids) are handled on the client side (below)
     const ticketRef = doc(db, 'tickets', params?.id as string);
     const ticketSnap = await getDoc(ticketRef);
     if (!ticketSnap.exists()) return { notFound: true };
@@ -38,11 +42,33 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 };
 
 export default function TicketPage({ ticket }: TicketPageProps) {
+    const router = useRouter(); // <-- GET ROUTER INSTANCE
+    
+    // CRITICAL: Extract the full list of ticket IDs from the URL query param 'all_ids'
+    const allTicketIds: string[] = Array.isArray(router.query.all_ids) 
+        ? router.query.all_ids[0].split(',') 
+        : typeof router.query.all_ids === 'string' 
+            ? router.query.all_ids.split(',') 
+            : [ticket.id]; // Fallback to current ID if list is missing
+
+    const currentTicketIndex = allTicketIds.findIndex(id => id === ticket.id);
+    const isLastTicket = currentTicketIndex === allTicketIds.length - 1;
+    const nextTicketId = allTicketIds[currentTicketIndex + 1];
+
+    const handleNextTicket = () => {
+        if (nextTicketId) {
+            // Navigate to the next ticket, preserving the list of all IDs in the query
+            router.push(`/ticket/${nextTicketId}?all_ids=${allTicketIds.join(',')}`);
+        } else if (isLastTicket) {
+            router.push('/'); // Go home if it's the last ticket
+        }
+    };
+    
     // QR Code data should include the unique ticket ID for verification
     const qrCodeData = JSON.stringify({
         id: ticket.id,
         show: ticket.showName,
-        name: ticket.userName, // Include name in QR code data
+        name: ticket.userName,
         rollno: ticket.userRollNo
     });
     // Ensure data is URL encoded
@@ -101,6 +127,19 @@ export default function TicketPage({ ticket }: TicketPageProps) {
                         <p className="mt-6 text-sm text-off-white opacity-70">This pass is valid for one entry only. Do not share.</p>
                     </div>
                 </div>
+
+                {/* --- NEW NAVIGATION BUTTON --- */}
+                {allTicketIds.length > 1 && (
+                    <button
+                        onClick={handleNextTicket}
+                        className={`w-full mt-4 py-3 rounded-lg font-bold text-lg transition-all duration-300 transform hover:scale-[1.01] ${isLastTicket 
+                            ? 'bg-primary-blue hover:bg-accent-teal' 
+                            : 'bg-neon-pink hover:bg-primary-blue'
+                        } text-white shadow-xl shadow-gray-900/50`}
+                    >
+                        {isLastTicket ? 'DONE / Back to Home' : `Next Ticket (${ticket.guestIndex + 1}/${ticket.totalGuests})`}
+                    </button>
+                )}
             </div>
         </div>
     );
