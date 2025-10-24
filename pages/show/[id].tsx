@@ -64,15 +64,14 @@ export default function ShowPage({ show }: ShowPageProps) {
             {/* Main Card Container */}
             <div className="w-full max-w-5xl animate-fade-in overflow-hidden rounded-2xl border border-primary-blue/30 bg-gray-900 shadow-2xl shadow-primary-blue/20 md:flex">
                 
-                {/* --- UPDATED IMAGE SECTION (with Overlay) --- */}
-                <div className="relative w-full md:w-1/2 h-96 md:h-auto bg-black flex items-center justify-center">
+                {/* --- Poster Section (Small & Contained) --- */}
+                <div className="relative w-full md:w-2/5 h-[30rem] md:h-auto bg-black flex items-center justify-center p-8 transition-all duration-300">
                     <img
-                        className="w-full h-full object-cover"
+                        // FIX: Use object-contain and max-height for smaller, correct display
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-xl"
                         src={show.imageUrl}
                         alt={show.name}
                     />
-                    {/* Subtle Gradient Overlay for blend */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-70"></div>
                     
                     {/* Back Button */}
                     <Link href="/" passHref>
@@ -83,10 +82,10 @@ export default function ShowPage({ show }: ShowPageProps) {
                         </div>
                     </Link>
                 </div>
-                {/* --- END OF UPDATED IMAGE SECTION --- */}
+                {/* --- END Poster Section --- */}
 
                 {/* Details and Booking Section */}
-                <div className="w-full md:w-1/2 p-8 flex flex-col justify-between">
+                <div className="w-full md:w-3/5 p-8 flex flex-col justify-between">
                     <div>
                         {/* Title with Gradient */}
                         <h1 className="mb-4 text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-accent-teal to-neon-pink animate-slide-up">
@@ -105,7 +104,8 @@ export default function ShowPage({ show }: ShowPageProps) {
                         </div>
                     </div>
 
-                    <div className="mt-auto animate-slide-up [animation-delay:300ms]">
+                    <div className="mt-auto animate-slide-up [animation-delay:300ms] p-6 bg-gray-800 rounded-xl border border-gray-700">
+                        <h2 className="text-2xl font-bold mb-4 text-primary-blue">Book Your Tickets</h2>
                         {ticketsLeft > 0 ? (
                             <>
                                 <div className="mb-6">
@@ -114,7 +114,7 @@ export default function ShowPage({ show }: ShowPageProps) {
                                         id="tickets" 
                                         value={ticketCount} 
                                         onChange={(e) => setTicketCount(Number(e.target.value))} 
-                                        className="w-full rounded-lg border-2 border-gray-700 bg-gray-800 p-3 text-lg focus:border-accent-teal focus:outline-none focus:ring-2 focus:ring-accent-teal/50 transition-all duration-200"
+                                        className="w-full rounded-lg border-2 border-gray-700 bg-gray-900 p-3 text-lg focus:border-accent-teal focus:outline-none focus:ring-2 focus:ring-accent-teal/50 transition-all duration-200"
                                     >
                                         {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
                                     </select>
@@ -135,7 +135,7 @@ export default function ShowPage({ show }: ShowPageProps) {
                                 )}
                             </>
                         ) : (
-                            <p className="animate-pulse text-center text-3xl font-extrabold text-neon-pink shadow-text-neon-pink/50">
+                            <p className="animate-pulse text-center text-3xl font-extrabold text-neon-pink">
                                 SOLD OUT
                             </p>
                         )}

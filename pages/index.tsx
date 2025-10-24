@@ -127,12 +127,9 @@ function ShowCard({ show, delay }: { show: Show; delay: number }) {
             
             {/* Title and Price */}
             <div className="flex justify-between items-start mb-2">
-                <h3 className="text-lg font-extrabold group-hover:text-accent-teal transition-colors duration-300 leading-tight line-clamp-2">
-                    {show.name}
+                <h3 className="text-lg font-extrabold text-off-white group-hover:text-accent-teal transition-colors duration-300 leading-tight line-clamp-2">
+                 {show.name}
                 </h3>
-                <span className="text-xl font-bold text-neon-pink ml-2 flex-shrink-0">
-                    ₹49
-                </span>
             </div>
 
             {/* Tickets Left Status */}
