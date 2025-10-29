@@ -45,7 +45,7 @@ const HomePage: NextPage<HomePageProps> = ({ shows }) => {
         {/* Title */}
         <div className="text-left mb-6">
          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
-           Electroflix (Tickets are not yet released!)
+           Electroflix
          </h1>
         </div>
         {/* Shows List */}
@@ -73,7 +73,7 @@ function ShowCard({ id, name, imageUrl, totalTickets, ticketsSold }: Show) {
         />
         {isSoldOut && (
           <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-md font-semibold shadow">
-            TICKETS YET TO RELEASE
+            SOLD OUT
           </div>
         )}
       </div>
